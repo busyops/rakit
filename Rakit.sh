@@ -1764,50 +1764,72 @@ pull_Mirror_File () {
 
     if [[ $system_Type -eq 1 && $release_2 -eq 7 ]]; then
     
-        mkdir /etc/yum.repos.d/bak-$mv_time && 	mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak-$mv_time && \
-        printf "备份已存在的yum文件       \033[32m[成功]\033[0m\n" || printf "备份已存在的yum文件       \033[31m[失败]\033[0m\n"
+        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-7/"
+        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-7/"
+        printf "备份已存在的yum文件    "
+        mkdir /etc/yum.repos.d/bak-$mv_time &&  mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak-$mv_time 2>/dev/null && \
+        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
 
-        curl -o /etc/yum.repos.d/CentOS-7-repo_file_All_In_One.tar.xz http://mirror-sv.raksmart.com/mirror-sv_source_file/centos-7/CentOS-7-repo_file_All_In_One.tar.xz  &>/dev/null && \
-        curl -o /etc/yum.repos.d/CentOS-7-epel_file_All_In_One.tar.xz http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/CentOS-7-epel_file_All_In_One.tar.xz  &>/dev/null && \
-        printf "拉取yum文件               \033[32m[成功]\033[0m\n" || printf "拉取yum文件               \033[31m[失败]\033[0m\n"
-
-        tar xf /etc/yum.repos.d/CentOS-7-repo_file_All_In_One.tar.xz -C /etc/yum.repos.d/  && \
-        tar xf /etc/yum.repos.d/CentOS-7-epel_file_All_In_One.tar.xz -C /etc/yum.repos.d/  && \
-        printf "解压缩                    \033[32m[成功]\033[0m\n" || printf "解压缩                    \033[31m[失败]\033[0m\n"
-
-        rm -f /etc/yum.repos.d/CentOS-7-repo_file_All_In_One.tar.xz && \
-        rm -f /etc/yum.repos.d/CentOS-7-epel_file_All_In_One.tar.xz && \
-        printf "清理压缩包                \033[32m[成功]\033[0m\n" || printf "清理压缩包              \033[31m[失败]\033[0m\n"
+        printf "拉取yum文件            "
+        if command -v wget >/dev/null 2>&1; then
+            wget -r -q -np -nH --cut-dirs=2 -R "index.html*" -P /etc/yum.repos.d/ "$yum_URL" && \
+            wget -r -q -np -nH --cut-dirs=3 -R "index.html*" -P /etc/yum.repos.d/ "$epel_URL" && \
+            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
 
 
-        yum clean all  &>/dev/null &&  printf "清理旧yum源缓存           \033[32m[成功]\033[0m\n" || printf "清理旧yum源缓存         \033[31m[失败]\033[0m\n"
-        yum makecache &>/dev/null
+        elif command -v curl >/dev/null 2>&1; then
+            file_list=$(curl -s "$yum_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
+            for yum_file in $file_list; do
+                curl -so "/etc/yum.repos.d/${yum_file}" "${yum_URL}${yum_file}"
+            done
+
+            file_list=$(curl -s "$epel_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
+            for yum_file in $file_list; do
+                curl -so "/etc/yum.repos.d/${yum_file}" "${epel_URL}${yum_file}"
+            done && printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
+            
+        fi
         
+        printf "清理旧yum源缓存" && yum clean all &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
+        printf "生成新yum源缓存" && yum makecache &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
+
         if_Mirror_Complete
+        
 
 
     elif [[ $system_Type -eq 1 && $release_2 -eq 8 ]]; then
-        mkdir /etc/yum.repos.d/bak-$mv_time && 	mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak-$mv_time && \
-        printf "备份已存在的yum文件       \033[32m[成功]\033[0m\n" || printf "备份已存在的yum文件       \033[31m[失败]\033[0m\n"
+        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-8/"
+        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
+        printf "备份已存在的yum文件    "
+        mkdir /etc/yum.repos.d/bak-$mv_time &&  mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak-$mv_time 2>/dev/null && \
+        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
 
-        curl -o /etc/yum.repos.d/CentOS-8-repo_file_All_In_One.tar.xz http://mirror-sv.raksmart.com/mirror-sv_source_file/centos-8/CentOS-8-repo_file_All_In_One.tar.xz  &>/dev/null && \
-        curl -o /etc/yum.repos.d/CentOS-8-epel_file_All_In_One.tar.xz http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/CentOS-8-epel_file_All_In_One.tar.xz  &>/dev/null && \
-        curl -o /etc/yum.repos.d/RPM-GPG-KEY-EPEL-8 http://mirror-sv.raksmart.com/epel/RPM-GPG-KEY-EPEL-8  &>/dev/null && \
-        printf "拉取yum文件               \033[32m[成功]\033[0m\n" || printf "拉取yum文件               \033[31m[失败]\033[0m\n"
+        printf "拉取yum文件            "
+        if command -v wget >/dev/null 2>&1; then
+            
+            wget -q -O /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8 http://mirror-sv.raksmart.com/epel/RPM-GPG-KEY-EPEL-8
+            wget -r -q -np -nH --cut-dirs=2 -R "index.html*" -P /etc/yum.repos.d/ "$yum_URL" && \
+            wget -r -q -np -nH --cut-dirs=3 -R "index.html*" -P /etc/yum.repos.d/ "$epel_URL" && \
+            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
 
-        tar xf /etc/yum.repos.d/CentOS-8-repo_file_All_In_One.tar.xz -C /etc/yum.repos.d/ && \
-        tar xf /etc/yum.repos.d/CentOS-8-epel_file_All_In_One.tar.xz -C /etc/yum.repos.d/ && \
-        printf "解压缩                    \033[32m[成功]\033[0m\n" || printf "解压缩                    \033[31m[失败]\033[0m\n"
 
-        rpm --import /etc/yum.repos.d/RPM-GPG-KEY-EPEL-8
-        rm -f /etc/yum.repos.d/CentOS-8-repo_file_All_In_One.tar.xz && \
-        rm -f /etc/yum.repos.d/CentOS-8-epel_file_All_In_One.tar.xz && \
-        rm -f /etc/yum.repos.d/RPM-GPG-KEY-EPEL-8 && \
-        printf "清理压缩包                \033[32m[成功]\033[0m\n" || printf "清理压缩包              \033[31m[失败]\033[0m\n"
+        elif command -v curl >/dev/null 2>&1; then
+            curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8 http://mirror-sv.raksmart.com/epel/RPM-GPG-KEY-EPEL-8  &>/dev/null
+            file_list=$(curl -s "$yum_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
+            for yum_file in $file_list; do
+                curl -so "/etc/yum.repos.d/${yum_file}" "${yum_URL}${yum_file}"
+            done
 
+            file_list=$(curl -s "$epel_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
+            for yum_file in $file_list; do
+                curl -so "/etc/yum.repos.d/${yum_file}" "${epel_URL}${yum_file}"
+            done && printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
+            
+        fi
+        rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
         yum upgrade libmodulemd -qy &>/dev/null
-        yum clean all &>/dev/null && printf "清理旧yum源缓存           \033[32m[成功]\033[0m\n" || printf "清理旧yum源缓存         \033[31m[失败]\033[0m\n"
-        yum makecache &>/dev/null
+        printf "清理旧yum源缓存" && yum clean all &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
+        printf "生成新yum源缓存" && yum makecache &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
 
         if_Mirror_Complete
 
