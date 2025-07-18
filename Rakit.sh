@@ -1,8 +1,7 @@
 #!/bin/bash
-# date: 2024-8-2  version: v1.4.2
+# date: 2025-7-2  version: v1.5.2
 # Author: Hope
 # Mail: busyops@outlook.com
-
 
 
 #############################################################
@@ -15,6 +14,11 @@
 # 2024.7.21 增加nmcli配置功能，适配centos stream 8  9    rocky linux
 # 2024.7.21 增加网络测速功能
 # 2024.8.2 修改网络测试功能，只下载speedtest-cli脚本
+# 2025.1.2 添加rocky linux 和almalinux替换源功能
+# 2025.1.10 修复Ubuntu 18-22网卡配置文件缩进问题
+# 2025.1.11 修复修改远程端口功能
+# 2025.1.11 修复centos 8无法替换yum的问题
+# 2025.7.19 2025年4月底, 写脚本的机器不小心被下架,根据原脚本的记录,将脚本恢复至被删除时的样子
 
 
 
@@ -49,21 +53,21 @@ clear
 \033[32;1m|  _ \ __ _| |/ (_) |_ \033[0m
 \033[32;1m| |_) / _\` | ' /| | __|\033[0m
 \033[32;1m|  _ < (_| | . \| | |_ \033[0m
-\033[32;1m|_| \_\__,_|_|\_\_|\__|\033[0m                        \033[1m--v1.4.2\033[0m\n"
+\033[32;1m|_| \_\__,_|_|\_\_|\__|\033[0m                        \033[1m--v1.5.2\033[0m\n"
 }
 
 
 start_Out_Info_Title () {
     clear
     echo -e "\033[32;1mRak_Smart Kit\033[0m"
-    echo -e "\033[1m                       --v1.4.2\033[0m"
+    echo -e "\033[1m                       --v1.5.2\033[0m"
 }
 
 start_Out_Info_Title_For_Addip () {
 
     clear
     echo -e "\033[32;1mRak_Smart Kit\033[0m"
-    echo -e "\033[1m                       --v1.4.2\n\033[0m"
+    echo -e "\033[1m                       --v1.5.2\n\033[0m"
 
     active_Ip=$(ip addr show $up_Card_Name | grep -v "127.0.0.1" | grep "\<inet\>" | wc -l)
     echo -e "当前配置的网卡：$up_Card_Name  生效ip：$active_Ip"
@@ -87,13 +91,14 @@ os_Base_Info () {
     "Debian"
     "Ubuntu"
     "Rocky Linux"
+    "Alima Linux"
     )
 
     if [ -f /etc/redhat-release ]; then
         egrep -q 'CentOS Linux release' /etc/redhat-release && system_Type=1 && release=$(awk '{print $4}' /etc/redhat-release) && release_2=$(echo $release | awk -F. '{print $1}')
         egrep -q 'CentOS Stream release' /etc/redhat-release && system_Type=2 && release=$(awk '{print $4}' /etc/redhat-release )
         egrep -q 'Rocky Linux release' /etc/redhat-release && system_Type=5 && release=$(awk '{print $4}' /etc/redhat-release) && release_2=$(echo $release | awk -F. '{print $1}')
-        
+        egrep -q 'AlmaLinux release' /etc/redhat-release && system_Type=6 && release=$(awk '{print $3}' /etc/redhat-release) && release_2=$(echo $release | awk -F. '{print $1}')
     elif command -v lsb_release &>/dev/null; then
         system_Type=$(lsb_release -a 2>/dev/null | awk '/^Description/{print $2}')
         if [ $system_Type == 'Debian' ]; then
@@ -124,24 +129,21 @@ start_Out_Option () {
     os_Base_Info
     option_List=(
 
-        " 1. 查看机器硬件信息           "
+        "1. 查看机器硬件信息           "
         "2. 查看链接状态信息           "
         "3. IP连通性检测               "
         "4. 添加IP地址                 "
         "5. 网络测速                   "
-        "6. 硬盘读写测速"
-        "7. 添加Rak网络镜像源"
-        "8. 修改远程端口"
-        "9. 修改系统时区"
+        "6. 添加Rak网络镜像源"
+        "7. 修改远程端口"
+        "8. 修改系统时区"
+        "9. 调用linux_tools.sh"
+        "10. 调用一键bbr脚本"
         "q. 退出"
     )
     a=5
     for i in {0..4}; do
-        if  [ $i -eq 0 ]; then
-            echo -e "${option_List[$i]}|        \033[31m\033[9m${option_List[$a]}\033[0m\n"
-        else
-            echo -e " ${option_List[$i]}|        ${option_List[$a]}\n"
-        fi
+        echo -e " ${option_List[$i]}|        ${option_List[$a]}\n"
         let a++
     done
 
@@ -590,7 +592,7 @@ ip_Info () {
 
 ip_Suppot () {
 
-     if [[ $system_Type -ge 1 && $system_Type -le 5 ]]; then
+     if [[ $system_Type -ge 1 && $system_Type -le 6 ]]; then
         echo
     else
         start_Out_Info_Title
@@ -613,7 +615,7 @@ netcard_Check () {
             echo "检测到存在多个状态UP的网卡, 手动选择配置到哪个网卡上:"
 
             for card_Name in $(seq 0 1 $((${#up_Netcard_List[@]}-1))); do
-                echo "$((card_Name+1)): ${up_Netcard_List[$card_Name]}"
+                echo "$((card_Name+1)): ${up_Netcard_List[$card_Name]} 当前网卡生效ip个数： $(ip addr show ${up_Netcard_List[$card_Name]} | grep -v "127.0.0.1" | grep "\<inet\>" | wc -l)"
             done
 
             read -p '请选择:' card
@@ -667,7 +669,7 @@ restart_Network () {
         up_Card_Conn=$(nmcli -g GENERAL.CONNECTION device show $up_Card_Name)
         echo -n "重启网卡中......" && nmcli conn reload && nmcli connection up "${up_Card_Conn}" &>/dev/null && echo -e "\033[32m[成功]\033[0m" || echo -e "\n\033[31m[失败]\033[0m"
     
-    elif [[ $system_Type -eq 5 ]]; then
+    elif [[ $system_Type -eq 5 || $system_Type -eq 6 ]]; then
         up_Card_Conn=$(nmcli -g GENERAL.CONNECTION device show $up_Card_Name)
         echo -n "重启网卡中......" && nmcli conn reload && nmcli connection up "${up_Card_Conn}" &>/dev/null && echo -e "\033[32m[成功]\033[0m" || echo -e "\n\033[31m[失败]\033[0m"
     
@@ -878,10 +880,10 @@ case $next_Want in
         Configuration_Ip_Centos
 
     elif [[ $system_Type -eq 1  && $release_2 -eq 8 ]]; then
-        Configuration_Ip_Centos_Sream
+        Configuration_Ip_Centos_Stream
 
     elif [[ $system_Type -eq 2  && ($release -eq 8 || $release -eq 9 || $release -eq 10) ]]; then
-        Configuration_Ip_Centos_Sream
+        Configuration_Ip_Centos_Stream
 
     elif [[ $system_Type -eq 3 ]]; then
         Configuration_Ip_Ubuntu_16
@@ -892,8 +894,9 @@ case $next_Want in
     elif [[ $system_Type -eq 4 && $release_2 -ge 18 ]]; then 
         Configuration_Ip_Ubuntu_20
     
-    elif [[ $system_Type -eq 5 ]]; then 
-        Configuration_Ip_Centos_Sream
+    elif [[ $system_Type -eq 5 || $system_Type -eq 6 ]]; then 
+        Configuration_Ip_Centos_Stream
+
 
     else
         echo
@@ -1025,32 +1028,14 @@ Complete_And_Output
 ### 2.4.6 Centos Stream 8 | 9 | 10 配置段
 
 
-Configuration_Ip_Centos_Sream () {
+Configuration_Ip_Centos_Stream () {
 
 ### 取值段
-#modify_Time=$(date "+%Y-%m-%d_%H:%M:%S")
 
-#if [[ $system_Type -eq 1  && $release_2 -eq 8 ]]; then
-#    network_Dir="/etc/sysconfig/network-scripts/"
-
-#elif [[ $system_Type -eq 2  && $release -eq 8 ]]; then
-#    network_Dir="/etc/sysconfig/network-scripts/"
-
-#else
-#    network_Dir="/etc/sysconfig/network-scripts/"
-#fi
-
-#[[ -d ${network_Dir}bak ]] || mkdir ${network_Dir}bak
 
 up_Card_Conn=$(nmcli -g GENERAL.CONNECTION device show $up_Card_Name)
 up_Card_Uuid=$(nmcli -g connection.uuid conn show "$up_Card_Conn")
 
-#for file in $(ls ${network_Dir}ifcfg-*); do
-#    egrep -q $up_Card_Uuid $file && up_Card_File=$file && network_Card_File=$(basename $file)
-#done
-
-#cp -a ${up_Card_File} ${network_Dir}bak/${network_Card_File}.bak.${modify_Time}
-#echo -e "\n# ----- ADD IP Time：$modify_Time -----" >> ${up_Card_File}
 
 ### 配置IP段
 if [[ ${#singleIP[@]} -gt 0 ]]; then
@@ -1228,105 +1213,79 @@ EOF
 ######  Ubuntu  18.04 | 20.04 | 22.04 IP配置段
 Configuration_Ip_Ubuntu_20 () {
 
-    modify_Time=$(date "+%Y-%m-%d_%H:%M:%S")
-    network_Card_File=$(ls /etc/netplan/*.yaml)
-    network_Card_File_Count=$(ls /etc/netplan/*.yaml | wc -l)
-    
+modify_Time=$(date "+%Y-%m-%d_%H:%M:%S")
+network_Card_File=$(ls /etc/netplan/*.yaml)
+network_Card_File_Count=$(ls /etc/netplan/*.yaml | wc -l)
 
-    if [[ $network_Card_File_Count -gt 1 ]]; then
-        echo "检测到存在多个网卡配置文件, 请手动处理" && sleep 3 
-        break
-    fi
+if [[ $network_Card_File_Count -gt 1 ]]; then
+    echo "检测到存在多个网卡配置文件, 请手动处理" && sleep 3 
+    break
+fi
 
-    network_Dir="/etc/netplan/"
-    [[ -d ${network_Dir}bak ]] || mkdir ${network_Dir}bak
-    file=$(basename /etc/netplan/00-installer-config.yaml)
-    
-    cp -a ${network_Card_File} ${network_Dir}bak/${file}.bak.${modify_Time}
+network_Dir="/etc/netplan/"
+[[ -d ${network_Dir}bak ]] || mkdir ${network_Dir}bak
+file=$(basename /etc/netplan/00-installer-config.yaml)
+cp -a ${network_Card_File} ${network_Dir}bak/${file}.bak.${modify_Time}
+space_count=$(grep -nA 1 "^[[:space:]]\+${up_Card_Name}" $network_Card_File | tail -1 |awk -F- '{print $2}' | awk -F'addresses:' '{print $1}')
+line_number=$(grep -nA 1 "^[[:space:]]\+${up_Card_Name}" $network_Card_File | awk -F: '{print $1}' | head -1)
+sed -i "${line_number}a\\${space_count}addresses:" $network_Card_File
+let line_number++
 
-    if [[ $os_Release =~ 'Ubuntu 18' ]]; then
-        modify_Info="# ----- ADD IP Time: $modify_Time  -----"
+if [[ ${#singleIP[@]} -gt 0 ]]; then
 
-    else
-        modify_Info="# ----- ADD IP Time: $modify_Time ↑↑↑↑↑ -----"
+    for add_Ip in $(seq 0 1 $((${#singleIP[@]}-1))); do
+        ip_1=$(echo ${singleIP[$add_Ip]} | awk '{print $1}')
+        prefix_1=$(echo ${singleIP[$add_Ip]} | awk '{print $2}')
+        netmask_1=$(echo "255.255.255.$((256-2**(32-$prefix_1)))")
+        gateway_1=$(echo ${singleIP[$add_Ip]} | awk '{print $4}')
+        ubu_Ip="${ip_1}/${prefix_1}"
+        sed -i "${line_number}a\\${space_count}- $ubu_Ip" $network_Card_File
+        com_Single_Ip[${#com_Single_Ip[@]}]="$ip_1 $netmask_1 $gateway_1"
 
-    fi
+    done
 
-    sed -i "/^[[:space:]]\+${up_Card_Name}:/G" $network_Card_File
-    sed  -i "/^[[:space:]]\+${up_Card_Name}:/a \\$modify_Info"   $network_Card_File
+fi
 
-    if [[ ${#singleIP[@]} -gt 0 ]]; then
-        
-        for add_Ip in $(seq 0 1 $((${#singleIP[@]}-1))); do
- 
-            ip_1=$(echo ${singleIP[$add_Ip]} | awk '{print $1}')
-            prefix_1=$(echo ${singleIP[$add_Ip]} | awk '{print $2}')
-            netmask_1=$(echo "255.255.255.$((256-2**(32-$prefix_1)))")
-            gateway_1=$(echo ${singleIP[$add_Ip]} | awk '{print $4}')
+if [[ ${#multi[@]} -gt 0 ]]; then
+    for add_Ip in $(seq 0 1 $((${#multi[@]}-1))); do
+        start_Ip=$(echo ${multi[$add_Ip]} | awk -F- '{print $1}')
+        first_Ip=$(echo ${start_Ip} | awk -F. '{print $NF}' )
+        network_Address=$(echo "${start_Ip}" | awk -F. '{printf "%s.%s.%s.",$1,$2,$3}')
+        host_Address_Max=$(echo "${multi[$add_Ip]}" | awk -F- '{print $2}' | awk '{print $1}')
+        prefix_1=$(echo ${multi[$add_Ip]} | awk '{print $2}')
+        netmask_1="255.255.255.$((256-2**(32-$prefix_1)))"
+        gateway_1=$(echo "${multi[$add_Ip]}" | awk '{print $4}')
 
-            ubu_Ip="      addresses: [${ip_1}/${prefix_1}]"
-            sed -i "/^[[:space:]]\+${up_Card_Name}:/a \\$ubu_Ip" $network_Card_File
-
-            com_Single_Ip[${#com_Single_Ip[@]}]="$ip_1 $netmask_1 $gateway_1"
-
+        for add_Multi in $(seq ${first_Ip} 1 ${host_Address_Max}); do
+            ubu_Ip="${network_Address}${add_Multi}/${prefix_1}"
+            sed -i "${line_number}a\\${space_count}- $ubu_Ip" $network_Card_File
         done
 
-    fi
-    
-    if [[ ${#multi[@]} -gt 0 ]]; then
-   
-        for add_Ip in $(seq 0 1 $((${#multi[@]}-1))); do
+        com_Multi_Ip[${#com_Multi_Ip[@]}]="${start_Ip} ${network_Address}${host_Address_Max} ${netmask_1} ${gateway_1}"
 
-            start_Ip=$(echo ${multi[$add_Ip]} | awk -F- '{print $1}')
-            first_Ip=$(echo ${start_Ip} | awk -F. '{print $NF}' )
-            network_Address=$(echo "${start_Ip}" | awk -F. '{printf "%s.%s.%s.",$1,$2,$3}')
-            host_Address_Max=$(echo "${multi[$add_Ip]}" | awk -F- '{print $2}' | awk '{print $1}')
-            prefix_1=$(echo ${multi[$add_Ip]} | awk '{print $2}')
-            netmask_1="255.255.255.$((256-2**(32-$prefix_1)))"
-            gateway_1=$(echo "${multi[$add_Ip]}" | awk '{print $4}')
+    done
+fi
 
+if [[ ${#overoall[@]} -gt 0 ]]; then
+    for add_Ip in $(seq 0 1 $((${#overoall[@]}-1))); do
+        first_Ip=$(($(echo ${overoall[$add_Ip]} | awk '{print $1}' | awk -F. '{print $NF}' )+1))
+        network_Address=$(echo "${overoall[$add_Ip]}" | awk -F. '{printf "%s.%s.%s.",$1,$2,$3}')
+        start_Ip=${network_Address}${first_Ip}
+        host_Address_Max=$(($(echo "${overoall[$add_Ip]}" | awk '{print $4}' | awk -F. '{printf "%s",$NF}')-1))
+        prefix_1=$(echo ${overoall[$add_Ip]} | awk '{print $2}')
+        netmask_1=$(echo "255.255.255.$((256-2**(32-$prefix_1)))")
+        gateway_1=$(echo "${overoall[$add_Ip]}" | awk '{print $4}')
 
-            for add_Multi in $(seq ${first_Ip} 1 ${host_Address_Max}); do
-
-                ubu_Ip="      addresses: [${network_Address}${add_Multi}/${prefix_1}]"
-                sed -i "/^[[:space:]]\+${up_Card_Name}:/a \\$ubu_Ip" $network_Card_File
-
-            done
-          
-            
-            com_Multi_Ip[${#com_Multi_Ip[@]}]="${start_Ip} ${network_Address}${host_Address_Max} ${netmask_1} ${gateway_1}"
-
+        for add_overoall in $(seq ${first_Ip} 1 ${host_Address_Max}); do
+            ubu_Ip="${network_Address}${add_overoall}/${prefix_1}"
+            sed -i "${line_number}a\\${space_count}- $ubu_Ip" $network_Card_File
         done
 
-        
-    fi
+        com_Overoall_Ip[${#com_Overoall_Ip[@]}]="${start_Ip} ${network_Address}${host_Address_Max} ${netmask_1} ${gateway_1}"
+    done
+fi
 
-    if [[ ${#overoall[@]} -gt 0 ]]; then
-
-        for add_Ip in $(seq 0 1 $((${#overoall[@]}-1))); do
-
-            first_Ip=$(($(echo ${overoall[$add_Ip]} | awk '{print $1}' | awk -F. '{print $NF}' )+1))
-            network_Address=$(echo "${overoall[$add_Ip]}" | awk -F. '{printf "%s.%s.%s.",$1,$2,$3}')
-            start_Ip=${network_Address}${first_Ip}
-            host_Address_Max=$(($(echo "${overoall[$add_Ip]}" | awk '{print $4}' | awk -F. '{printf "%s",$NF}')-1))
-            prefix_1=$(echo ${overoall[$add_Ip]} | awk '{print $2}')
-            netmask_1=$(echo "255.255.255.$((256-2**(32-$prefix_1)))")
-            gateway_1=$(echo "${overoall[$add_Ip]}" | awk '{print $4}')
-
-            for add_overoall in $(seq ${first_Ip} 1 ${host_Address_Max}); do
-                
-                ubu_Ip="      addresses: [${network_Address}${add_overoall}/${prefix_1}]"
-                sed  -i "/^[[:space:]]\+${up_Card_Name}:/a \\$ubu_Ip" $network_Card_File
-
-            done
-
-            com_Overoall_Ip[${#com_Overoall_Ip[@]}]="${start_Ip} ${network_Address}${host_Address_Max} ${netmask_1} ${gateway_1}"
-
-        done
-        
-    fi
-
-    Complete_And_Output
+Complete_And_Output
     
 }
 
@@ -1714,10 +1673,10 @@ if_Mirror_Complete () {
 
     if [ $? -eq 0 ]; then
 
-            printf "生成镜像源 源数据          \033[32m[成功]\033[0m\n"
+            printf "生成镜像源 源数据      \033[32m[成功]\033[0m\n"
             mirror_Complete=1
         else
-            printf "生成镜像源 源数据        \033[31m[失败]\033[0m\n"
+            printf "生成镜像源 源数据      \033[31m[失败]\033[0m\n"
             mirror_Complete=1
         fi
 
@@ -1726,7 +1685,7 @@ if_Mirror_Complete () {
 
 Mirror_Suppot () {
 
-    if [[ $system_Type -ge 1 && $system_Type -le 4 ]]; then
+    if [[ $system_Type -ge 1 && $system_Type -le 6 ]]; then
         start_Out_Info_Title
         echo -e "\033[32m--- 拉取Rak Mirror File    ----------------------------\033[0m"
         printf "%-2s %-29s" "OS:" "${system_List[$system_Type]} $release" 
@@ -1756,6 +1715,55 @@ ping_Mirror-Sv () {
     fi
 }
 
+pull_Rhel_file () {
+    printf "备份已存在的yum文件    "
+    mkdir /etc/yum.repos.d/bak-$mv_time &&  mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak-$mv_time 2>/dev/null && \
+    printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
+
+    printf "拉取yum文件            "
+    if command -v wget >/dev/null 2>&1; then
+        wget -r -q -np -nH --cut-dirs=2 -R "index.html*" -P /etc/yum.repos.d/ "$yum_URL" && \
+        wget -r -q -np -nH --cut-dirs=3 -R "index.html*" -P /etc/yum.repos.d/ "$epel_URL" && \
+        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
+
+    elif command -v curl >/dev/null 2>&1; then
+        file_list=$(curl -s "$yum_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
+        for yum_file in $file_list; do
+            curl -so "/etc/yum.repos.d/${yum_file}" "${yum_URL}${yum_file}"
+        done
+
+        file_list=$(curl -s "$epel_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
+        for yum_file in $file_list; do
+            curl -so "/etc/yum.repos.d/${yum_file}" "${epel_URL}${yum_file}"
+        done && printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
+            
+    fi
+
+    printf "清理旧yum源缓存" && yum clean all &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
+    printf "生成新yum源缓存" && yum makecache &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
+
+    if_Mirror_Complete
+}
+
+pull_Ubuntu_file () {
+    printf "备份已存在的apt文件    "
+    mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time 2>/dev/null && \
+    printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
+
+    printf "拉取apt文件            "
+    if command -v wget >/dev/null 2>&1; then
+        wget -qO /etc/apt/sources.list "$apt_Url" && \
+        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
+
+    elif command -v curl >/dev/null 2>&1; then
+        curl -so "/etc/apt/sources.list" "$apt_Url" && \
+        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
+    fi
+
+    printf "生成新apt源缓存" && apt update &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
+    if_Mirror_Complete
+}
+
 
 pull_Mirror_File () {
     mv_time=$(date "+%Y-%m-%d_%H:%M:%S")
@@ -1766,276 +1774,94 @@ pull_Mirror_File () {
     
         yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-7/"
         epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-7/"
-        printf "备份已存在的yum文件    "
-        mkdir /etc/yum.repos.d/bak-$mv_time &&  mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak-$mv_time 2>/dev/null && \
-        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        printf "拉取yum文件            "
-        if command -v wget >/dev/null 2>&1; then
-            wget -r -q -np -nH --cut-dirs=2 -R "index.html*" -P /etc/yum.repos.d/ "$yum_URL" && \
-            wget -r -q -np -nH --cut-dirs=3 -R "index.html*" -P /etc/yum.repos.d/ "$epel_URL" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-
-        elif command -v curl >/dev/null 2>&1; then
-            file_list=$(curl -s "$yum_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
-            for yum_file in $file_list; do
-                curl -so "/etc/yum.repos.d/${yum_file}" "${yum_URL}${yum_file}"
-            done
-
-            file_list=$(curl -s "$epel_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
-            for yum_file in $file_list; do
-                curl -so "/etc/yum.repos.d/${yum_file}" "${epel_URL}${yum_file}"
-            done && printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-            
-        fi
+        pull_Rhel_file
         
-        printf "清理旧yum源缓存" && yum clean all &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-        printf "生成新yum源缓存" && yum makecache &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-
-        if_Mirror_Complete
-        
-
 
     elif [[ $system_Type -eq 1 && $release_2 -eq 8 ]]; then
         yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-8/"
         epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
         rpm --import http://mirror-sv.raksmart.com/epel/RPM-GPG-KEY-EPEL-8
-        printf "备份已存在的yum文件    "
-        mkdir /etc/yum.repos.d/bak-$mv_time &&  mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak-$mv_time 2>/dev/null && \
-        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        printf "拉取yum文件            "
-        if command -v wget >/dev/null 2>&1; then
-            wget -r -q -np -nH --cut-dirs=2 -R "index.html*" -P /etc/yum.repos.d/ "$yum_URL" && \
-            wget -r -q -np -nH --cut-dirs=3 -R "index.html*" -P /etc/yum.repos.d/ "$epel_URL" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-
-        elif command -v curl >/dev/null 2>&1; then
-            file_list=$(curl -s "$yum_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
-            for yum_file in $file_list; do
-                curl -so "/etc/yum.repos.d/${yum_file}" "${yum_URL}${yum_file}"
-            done
-
-            file_list=$(curl -s "$epel_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
-            for yum_file in $file_list; do
-                curl -so "/etc/yum.repos.d/${yum_file}" "${epel_URL}${yum_file}"
-            done && printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-            
-        fi
+        pull_Rhel_file
         yum upgrade libmodulemd -qy &>/dev/null
-        printf "清理旧yum源缓存" && yum clean all &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-        printf "生成新yum源缓存" && yum makecache &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-
-        if_Mirror_Complete
 
 
     elif [[ $system_Type -eq 2 && $release -eq 8 ]]; then
         yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-stream-8/"
         epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
-        printf "备份已存在的yum文件    "
-        mkdir /etc/yum.repos.d/bak-$mv_time &&  mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak-$mv_time 2>/dev/null && \
-        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        printf "拉取yum文件            "
-        if command -v wget >/dev/null 2>&1; then
-            wget -r -q -np -nH --cut-dirs=2 -R "index.html*" -P /etc/yum.repos.d/ "$yum_URL" && \
-            wget -r -q -np -nH --cut-dirs=3 -R "index.html*" -P /etc/yum.repos.d/ "$epel_URL" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        elif command -v curl >/dev/null 2>&1; then
-            file_list=$(curl -s "$yum_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
-            for yum_file in $file_list; do
-                curl -so "/etc/yum.repos.d/${yum_file}" "${yum_URL}${yum_file}"
-            done
-
-            file_list=$(curl -s "$epel_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
-            for yum_file in $file_list; do
-                curl -so "/etc/yum.repos.d/${yum_file}" "${epel_URL}${yum_file}"
-            done && printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        fi
-        printf "清理旧yum源缓存" && yum clean all &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-        printf "生成新yum源缓存" && yum makecache &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-
-        if_Mirror_Complete
-
+        pull_Rhel_file
 
     elif [[ $system_Type -eq 2 && $release -eq 9 ]]; then
         yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-stream-9/"
         epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-9-steam/"
         rpm --import https://mirror-sv.raksmart.com/epel/RPM-GPG-KEY-EPEL-9
-        printf "备份已存在的yum文件    "
-        mkdir /etc/yum.repos.d/bak-$mv_time &&  mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak-$mv_time 2>/dev/null && \
-        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        printf "拉取yum文件            "
-        if command -v wget >/dev/null 2>&1; then
-            wget -r -q -np -nH --cut-dirs=2 -R "index.html*" -P /etc/yum.repos.d/ "$yum_URL" && \
-            wget -r -q -np -nH --cut-dirs=3 -R "index.html*" -P /etc/yum.repos.d/ "$epel_URL" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        elif command -v curl >/dev/null 2>&1; then
-            file_list=$(curl -s "$yum_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
-            for yum_file in $file_list; do
-                curl -so "/etc/yum.repos.d/${yum_file}" "${yum_URL}${yum_file}"
-            done
-
-            file_list=$(curl -s "$epel_URL" | grep -oP '(?<=href=")[^"]+' | grep -v '/$')
-            for yum_file in $file_list; do
-                curl -so "/etc/yum.repos.d/${yum_file}" "${epel_URL}${yum_file}"
-            done && printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        fi
-        printf "清理旧yum源缓存" && yum clean all &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-        printf "生成新yum源缓存" && yum makecache &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-
-        if_Mirror_Complete
+        pull_Rhel_file
 
     elif [[ $system_Type -eq 3 && $release -eq 10 ]]; then
-        printf "备份已存在的apt文件    "
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time 2>/dev/null && \
-        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        printf "拉取apt文件            "
-        if command -v wget >/dev/null 2>&1; then
-            wget -qO /etc/apt/sources.list "https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian10_sources.list" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        elif command -v curl >/dev/null 2>&1; then
-            curl -so "/etc/apt/sources.list" "https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian10_sources.list" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-        fi
-
+        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian10_sources.list"
+        pull_Ubuntu_file
         apt install -y debian-archive-keyring &>/dev/null
-        printf "生成新apt源缓存" && apt update &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-        
-        if_Mirror_Complete
 
     elif [[ $system_Type -eq 3 && $release -eq 11 ]]; then
-        printf "备份已存在的apt文件    "
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time 2>/dev/null && \
-        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        printf "拉取apt文件            "
-        if command -v wget >/dev/null 2>&1; then
-            wget -qO /etc/apt/sources.list "https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian11_sources.list" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        elif command -v curl >/dev/null 2>&1; then
-            curl -so "/etc/apt/sources.list" "https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian11_sources.list" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-        fi
-
-        printf "生成新apt源缓存" && apt update &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-
-        if_Mirror_Complete
+        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian11_sources.list"
+        pull_Ubuntu_file
 
     elif [[ $system_Type -eq 3 && $release -eq 12 ]]; then
-        printf "备份已存在的apt文件    "
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time 2>/dev/null && \
-        printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        printf "拉取apt文件            "
-        if command -v wget >/dev/null 2>&1; then
-            wget -qO /etc/apt/sources.list "https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian12_sources.list" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-
-        elif command -v curl >/dev/null 2>&1; then
-            curl -so "/etc/apt/sources.list" "https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian12_sources.list" && \
-            printf "\033[32m[成功]\033[0m\n" || printf "\033[31m[失败]\033[0m\n"
-        fi
-
-        printf "生成新apt源缓存" && apt update &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
-
-        if_Mirror_Complete
+        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian12_sources.list"
+        pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 14 ]]; then
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time && \
-        printf "备份已存在的sources.list文件       \033[32m[成功]\033[0m\n" || printf "备份已存在的sources.list文件       \033[31m[失败]\033[0m\n"
-
-        wget http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_14.04_sources.list -O /etc/apt/sources.list &>/dev/null && \
-        printf "拉取sources.list文件               \033[32m[成功]\033[0m\n" || printf "拉取sources.list文件               \033[31m[失败]\033[0m\n"
-
-        apt update &>/dev/null
-
-        if_Mirror_Complete
+        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_14.04_sources.list"
+        pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 16 ]]; then
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time && \
-        printf "备份已存在的sources.list文件       \033[32m[成功]\033[0m\n" || printf "备份已存在的sources.list文件       \033[31m[失败]\033[0m\n"
-
-        wget http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_16.04_sources.list -O /etc/apt/sources.list &>/dev/null && \
-        printf "拉取sources.list文件               \033[32m[成功]\033[0m\n" || printf "拉取sources.list文件               \033[31m[失败]\033[0m\n"
-        apt update &>/dev/null
-
-        if_Mirror_Complete
+        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_16.04_sources.list"
+        pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 18 ]]; then
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time && \
-        printf "备份已存在的sources.list文件       \033[32m[成功]\033[0m\n" || printf "备份已存在的sources.list文件       \033[31m[失败]\033[0m\n"
-
-        wget http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_18.04_sources.list -O /etc/apt/sources.list &>/dev/null && \
-        printf "拉取sources.list文件               \033[32m[成功]\033[0m\n" || printf "拉取sources.list文件               \033[31m[失败]\033[0m\n"
-
-        apt update &>/dev/null
-
-        if_Mirror_Complete
+        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_18.04_sources.list"
+        pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 20 ]]; then
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time && \
-        printf "备份已存在的sources.list文件       \033[32m[成功]\033[0m\n" || printf "备份已存在的sources.list文件       \033[31m[失败]\033[0m\n"
-
-        wget http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_20.04_sources.list -O /etc/apt/sources.list  &>/dev/null && \
-        printf "拉取sources.list文件               \033[32m[成功]\033[0m\n" || printf "拉取sources.list文件               \033[31m[失败]\033[0m\n"
-        apt update &>/dev/null
-
-        if_Mirror_Complete
+        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_20.04_sources.list"
+        pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 22 ]]; then
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time && \
-        printf "备份已存在的sources.list文件       \033[32m[成功]\033[0m\n" || printf "备份已存在的sources.list文件       \033[31m[失败]\033[0m\n"
-
-        wget http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_22.04_sources.list -O /etc/apt/sources.list  &>/dev/null && \
-        printf "拉取sources.list文件               \033[32m[成功]\033[0m\n" || printf "拉取sources.list文件               \033[31m[失败]\033[0m\n"
-
-        apt update &>/dev/null
-
-        if_Mirror_Complete
+        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_22.04_sources.list"
+        pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 23 ]]; then
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time && \
-        printf "备份已存在的sources.list文件       \033[32m[成功]\033[0m\n" || printf "备份已存在的sources.list文件       \033[31m[失败]\033[0m\n"
-
+        
         release=$(echo $release | awk -F. '{print $NF}')
-
         if [ $release -eq 10 ];then
-	        wget http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_23.10_sources.list -O /etc/apt/sources.list  &>/dev/null && \
-            printf "拉取sources.list文件               \033[32m[成功]\033[0m\n" || printf "拉取sources.list文件               \033[31m[失败]\033[0m\n"
-
+            apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_23.10_sources.list"
+            pull_Ubuntu_file
 	    else
-	        wget http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_23.04_sources.list -O /etc/apt/sources.list &>/dev/null && \
-            printf "拉取sources.list文件               \033[32m[成功]\033[0m\n" || printf "拉取sources.list文件               \033[31m[失败]\033[0m\n"
-	    fi
+            apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_23.04_sources.list"
+            pull_Ubuntu_file
 
-	    apt update &>/dev/null
-
-        if_Mirror_Complete
+        fi
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 24 ]]; then
-        mv /etc/apt/sources.list /etc/apt/sources.list.$mv_time && \
-        printf "备份已存在的sources.list文件       \033[32m[成功]\033[0m\n" || printf "备份已存在的sources.list文件       \033[31m[失败]\033[0m\n"
+        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_24.04_sources.list"
+        pull_Ubuntu_file
 
-        wget http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_24.04_sources.list -O /etc/apt/sources.list &>/dev/null && \
-        printf "拉取sources.list文件               \033[32m[成功]\033[0m\n" || printf "拉取sources.list文件               \033[31m[失败]\033[0m\n"
+    elif [[ $system_Type -eq 5 && $release_2 -eq 9 ]]; then
+        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/rocky-9/"
+        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/rocky-9/"
+        rpm --import https://mirror-sv.raksmart.com/epel/RPM-GPG-KEY-EPEL-9
+        pull_Rhel_file
 
-        apt update &>/dev/null
+    elif [[ $system_Type -eq 6 && $release_2 -eq 8 ]]; then
+        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/almalinux-8/"
+        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/alimalinux-8/"
+        rpm --import https://mirror-sv.raksmart.com/almalinux/RPM-GPG-KEY-AlmaLinux-8
+        pull_Rhel_file
 
-        if_Mirror_Complete
+    elif [[ $system_Type -eq 6 && $release_2 -eq 9 ]]; then
+        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/almalinux-9/"
+        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/alimalinux-9/"
+        pull_Rhel_file
     fi
-
-
 
     if [ $mirror_Complete -eq 1 ]; then
         sub_Footer_Out
@@ -2059,7 +1885,7 @@ sshd_Info () {
 
     ssh_Port_Listen=$(ss -tnlp  | grep "\<sshd\>" | awk -F: '{print $2}' | awk '{print $1}')
     ssh_Port_Config=$(grep "^Port[[:space:]][[:digit:]]\{2,6\}" /etc/ssh/sshd_config | awk '{print $2}')
-
+    ssh_Port_Config=${ssh_Port_Config:-22}
     echo "本机sshd服务监听的端口为：$ssh_Port_Listen   配置文件中设置的端口为: $ssh_Port_Config"
 
     sub_Footer_Out
@@ -2127,9 +1953,12 @@ elif [[ $next_Want -ge 1024 && $next_Want -le 65535 ]];then
         again_Output=2
 
     else
-        echo "正在修改端口...." &&  sed -i "/^Port/s/Port.*/Port ${next_Want}/" /etc/ssh/sshd_config && systemctl restart sshd.service
-        [ $? -eq 0 ] && echo "远程端口修改成功，3秒后自动重新检测....." || echo "远程端口修改失败，请手动排查问题"
-        iptables -I INPUT -p tcp --dport $next_Want -j ACCEPT && echo "防火墙已打开, 放行端口: $next_Want"
+        echo "正在修改端口...."
+        sed -i "/^Port.*/d" /etc/ssh/sshd_config && sed -i "13i\Port ${next_Want}" /etc/ssh/sshd_config
+        iptables -I INPUT -p tcp --dport $next_Want -j ACCEPT &>/dev/null && echo "防火墙已打开, 放行端口: $next_Want"
+        firewall-cmd --permanent --add-port=${next_Want}/tcp  &>/dev/null && echo "防火墙已打开, 放行端口: $next_Want"
+        firewall-cmd --reload &>/dev/null && echo "防火墙已打开, 放行端口: $next_Want"
+        ufw allow ${next_Want}/tcp &>/dev/null && echo "防火墙已打开, 放行端口: $next_Want"
         again_Test=1
         again_Output=1
         sleep 5
@@ -2355,21 +2184,25 @@ while true; do
         ;;
     
     6)
-        echo "敬请期待" && sleep 3
-        ;;
-
-    7)
         in_Cycle_For_Pull_Mirror_File Mirror_Suppot next_Want_Mirror 
         ;;
 
-    8)
+    7)
         in_Cycle sshd_Info next_Page_Sshd
         ;;
 
-    9)
+    8)
         in_Cycle timezones_Info next_Page_Timezones
         ;;
 
+    9)
+        curl -O http://198.200.51.51/linux_tools.sh && bash linux_tools.sh
+        ;;
+             
+    10)  
+        wget -N --no-check-certificate "https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh";chmod +x tcp.sh;./tcp.sh
+        ;;
+    
     q)
         auto_Delete_Configuration
         ;;
