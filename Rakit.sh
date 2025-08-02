@@ -2,6 +2,7 @@
 # date: 2025-8-2  version: v1.5.3
 # Author: Hope
 # Mail: busyops@outlook.com
+# Github: git@github.com:busyops/rakit.git
 
 ##### 自删配置段  =0: 关闭自删  =1: 退出脚本执行自删
 auto_delete=0
