@@ -1,26 +1,7 @@
 #!/bin/bash
-# date: 2025-7-2  version: v1.5.2
+# date: 2025-8-2  version: v1.5.3
 # Author: Hope
 # Mail: busyops@outlook.com
-
-
-#############################################################
-#################更新日志#####################
-# 2023-12-18 修改数组比较方式，删掉grep过滤，添加comm命令进行数组比较差异
-# 2023-12-22 完成交互面（除添加IP功能外）
-# 2024-1.8 实现Centos 7.x IP功能添加
-# 2024-2.1 实现Ubuntu 16-22，Debian 8-10添加ip功能
-# 2024-2.2 修改链接状态信息，增加IP归属地查询。
-# 2024.7.21 增加nmcli配置功能，适配centos stream 8  9    rocky linux
-# 2024.7.21 增加网络测速功能
-# 2024.8.2 修改网络测试功能，只下载speedtest-cli脚本
-# 2025.1.2 添加rocky linux 和almalinux替换源功能
-# 2025.1.10 修复Ubuntu 18-22网卡配置文件缩进问题
-# 2025.1.11 修复修改远程端口功能
-# 2025.1.11 修复centos 8无法替换yum的问题
-# 2025.7.19 2025年4月底, 写脚本的机器不小心被下架,根据原脚本的记录,将脚本恢复至被删除时的样子
-
-
 
 ##### 自删配置段  =0: 关闭自删  =1: 退出脚本执行自删
 auto_delete=0
@@ -53,21 +34,21 @@ clear
 \033[32;1m|  _ \ __ _| |/ (_) |_ \033[0m
 \033[32;1m| |_) / _\` | ' /| | __|\033[0m
 \033[32;1m|  _ < (_| | . \| | |_ \033[0m
-\033[32;1m|_| \_\__,_|_|\_\_|\__|\033[0m                        \033[1m--v1.5.2\033[0m\n"
+\033[32;1m|_| \_\__,_|_|\_\_|\__|\033[0m                        \033[1m--v1.5.3\033[0m\n"
 }
 
 
 start_Out_Info_Title () {
     clear
     echo -e "\033[32;1mRak_Smart Kit\033[0m"
-    echo -e "\033[1m                       --v1.5.2\033[0m"
+    echo -e "\033[1m                       --v1.5.3\033[0m"
 }
 
 start_Out_Info_Title_For_Addip () {
 
     clear
     echo -e "\033[32;1mRak_Smart Kit\033[0m"
-    echo -e "\033[1m                       --v1.5.2\n\033[0m"
+    echo -e "\033[1m                       --v1.5.3\n\033[0m"
 
     active_Ip=$(ip addr show $up_Card_Name | grep -v "127.0.0.1" | grep "\<inet\>" | wc -l)
     echo -e "当前配置的网卡：$up_Card_Name  生效ip：$active_Ip"
@@ -1772,8 +1753,8 @@ pull_Mirror_File () {
 
     if [[ $system_Type -eq 1 && $release_2 -eq 7 ]]; then
     
-        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-7/"
-        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-7/"
+        yum_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/centos-7/"
+        epel_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-7/"
         pull_Rhel_file
         
 
