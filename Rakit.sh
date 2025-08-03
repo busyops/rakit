@@ -1,5 +1,5 @@
 #!/bin/bash
-# date: 2025-8-2  version: v1.5.3
+# date: 2025-8-3  version: v1.5.4
 # Author: Hope
 # Mail: busyops@outlook.com
 # Github: git@github.com:busyops/rakit.git
@@ -35,21 +35,21 @@ clear
 \033[32;1m|  _ \ __ _| |/ (_) |_ \033[0m
 \033[32;1m| |_) / _\` | ' /| | __|\033[0m
 \033[32;1m|  _ < (_| | . \| | |_ \033[0m
-\033[32;1m|_| \_\__,_|_|\_\_|\__|\033[0m                        \033[1m--v1.5.3\033[0m\n"
+\033[32;1m|_| \_\__,_|_|\_\_|\__|\033[0m                        \033[1m--v1.5.4\033[0m\n"
 }
 
 
 start_Out_Info_Title () {
     clear
     echo -e "\033[32;1mRak_Smart Kit\033[0m"
-    echo -e "\033[1m                       --v1.5.3\033[0m"
+    echo -e "\033[1m                       --v1.5.4\033[0m"
 }
 
 start_Out_Info_Title_For_Addip () {
 
     clear
     echo -e "\033[32;1mRak_Smart Kit\033[0m"
-    echo -e "\033[1m                       --v1.5.3\n\033[0m"
+    echo -e "\033[1m                       --v1.5.4\n\033[0m"
 
     active_Ip=$(ip addr show $up_Card_Name | grep -v "127.0.0.1" | grep "\<inet\>" | wc -l)
     echo -e "当前配置的网卡：$up_Card_Name  生效ip：$active_Ip"
@@ -1762,7 +1762,7 @@ pull_Mirror_File () {
     elif [[ $system_Type -eq 1 && $release_2 -eq 8 ]]; then
         yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-8/"
         epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
-        rpm --import http://mirror-sv.raksmart.com/epel/RPM-GPG-KEY-EPEL-8
+        rpm --import http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-8
         pull_Rhel_file
         yum upgrade libmodulemd -qy &>/dev/null
 
@@ -1775,7 +1775,7 @@ pull_Mirror_File () {
     elif [[ $system_Type -eq 2 && $release -eq 9 ]]; then
         yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-stream-9/"
         epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-9-steam/"
-        rpm --import https://mirror-sv.raksmart.com/epel/RPM-GPG-KEY-EPEL-9
+        rpm --import https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-9
         pull_Rhel_file
 
     elif [[ $system_Type -eq 3 && $release -eq 10 ]]; then
@@ -1830,7 +1830,7 @@ pull_Mirror_File () {
     elif [[ $system_Type -eq 5 && $release_2 -eq 9 ]]; then
         yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/rocky-9/"
         epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/rocky-9/"
-        rpm --import https://mirror-sv.raksmart.com/epel/RPM-GPG-KEY-EPEL-9
+        rpm --import https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-9
         pull_Rhel_file
 
     elif [[ $system_Type -eq 6 && $release_2 -eq 8 ]]; then
