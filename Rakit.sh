@@ -1723,6 +1723,10 @@ pull_Rhel_file () {
 
     printf "清理旧yum源缓存" && yum clean all &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
     printf "生成新yum源缓存" && yum makecache &>/dev/null && printf "        \033[32m[成功]\033[0m\n" || printf "      \033[31m[失败]\033[0m\n"
+    
+    if [[ $system_Type -eq 1 && $release_2 -eq 8 ]]; then
+        yum upgrade libmodulemd -qy &>/dev/null
+    fi
 
     if_Mirror_Complete
 }
@@ -1762,14 +1766,13 @@ pull_Mirror_File () {
     elif [[ $system_Type -eq 1 && $release_2 -eq 8 ]]; then
         yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-8/"
         epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
-        rpm --import http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-8
-        pull_Rhel_file
-        yum upgrade libmodulemd -qy &>/dev/null
-
+        rpm --import http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-8 
+        pull_Rhel_file        
 
     elif [[ $system_Type -eq 2 && $release -eq 8 ]]; then
         yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-stream-8/"
         epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
+        rpm --import http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-8 
         pull_Rhel_file
 
     elif [[ $system_Type -eq 2 && $release -eq 9 ]]; then

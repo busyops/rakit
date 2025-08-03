@@ -14,3 +14,4 @@ egrep -v "^[[:space:]]*$" "$TMP_FILE" \
 > "$tmp_clean"
 
 mv "$tmp_clean" "$TMP_FILE"
+chmod 644 "$TMP_FILE"
