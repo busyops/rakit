@@ -1,5 +1,5 @@
 #!/bin/bash
-# date: 2025-8-3  version: v1.5.4
+# date: 2025-8-3  version: v1.5.5
 # Author: Hope
 # Mail: busyops@outlook.com
 # Github: git@github.com:busyops/rakit.git
@@ -35,14 +35,14 @@ clear
 \033[32;1m|  _ \ __ _| |/ (_) |_ \033[0m
 \033[32;1m| |_) / _\` | ' /| | __|\033[0m
 \033[32;1m|  _ < (_| | . \| | |_ \033[0m
-\033[32;1m|_| \_\__,_|_|\_\_|\__|\033[0m                        \033[1m--v1.5.4\033[0m\n"
+\033[32;1m|_| \_\__,_|_|\_\_|\__|\033[0m                        \033[1m--v1.5.5\033[0m\n"
 }
 
 
 start_Out_Info_Title () {
     clear
     echo -e "\033[32;1mRak_Smart Kit\033[0m"
-    echo -e "\033[1m                       --v1.5.4\033[0m"
+    echo -e "\033[1m                       --v1.5.5\033[0m"
 }
 
 start_Out_Info_Title_For_Addip () {
@@ -1764,87 +1764,92 @@ pull_Mirror_File () {
         
 
     elif [[ $system_Type -eq 1 && $release_2 -eq 8 ]]; then
-        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-8/"
-        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
+        yum_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/centos-8/"
+        epel_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
         rpm --import http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-8 
         pull_Rhel_file        
 
     elif [[ $system_Type -eq 2 && $release -eq 8 ]]; then
-        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-stream-8/"
-        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
+        yum_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/centos-stream-8/"
+        epel_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-8/"
         rpm --import http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-8 
         pull_Rhel_file
 
     elif [[ $system_Type -eq 2 && $release -eq 9 ]]; then
-        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/centos-stream-9/"
-        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-9-steam/"
-        rpm --import https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-9
+        yum_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/centos-stream-9/"
+        epel_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/centos-9-steam/"
+        rpm --import http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-9
         pull_Rhel_file
 
+    
     elif [[ $system_Type -eq 3 && $release -eq 10 ]]; then
-        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian10_sources.list"
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian10_sources.list"
         pull_Ubuntu_file
         apt install -y debian-archive-keyring &>/dev/null
 
     elif [[ $system_Type -eq 3 && $release -eq 11 ]]; then
-        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian11_sources.list"
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian11_sources.list"
         pull_Ubuntu_file
 
     elif [[ $system_Type -eq 3 && $release -eq 12 ]]; then
-        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian12_sources.list"
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian12_sources.list"
+        pull_Ubuntu_file
+    
+    elif [[ $system_Type -eq 3 && $release -eq 13 ]]; then
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/debian/debian13_sources.list"
         pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 14 ]]; then
-        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_14.04_sources.list"
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_14.04_sources.list"
         pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 16 ]]; then
-        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_16.04_sources.list"
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_16.04_sources.list"
         pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 18 ]]; then
-        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_18.04_sources.list"
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_18.04_sources.list"
         pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 20 ]]; then
-        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_20.04_sources.list"
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_20.04_sources.list"
         pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 22 ]]; then
-        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_22.04_sources.list"
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_22.04_sources.list"
         pull_Ubuntu_file
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 23 ]]; then
         
         release=$(echo $release | awk -F. '{print $NF}')
         if [ $release -eq 10 ];then
-            apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_23.10_sources.list"
+            apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_23.10_sources.list"
             pull_Ubuntu_file
 	    else
-            apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_23.04_sources.list"
+            apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_23.04_sources.list"
             pull_Ubuntu_file
 
         fi
 
     elif [[ $system_Type -eq 4 && $release_2 -eq 24 ]]; then
-        apt_Url="https://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_24.04_sources.list"
+        apt_Url="http://mirror-sv.raksmart.com/mirror-sv_source_file/ubuntu/ubuntu_24.04_sources.list"
         pull_Ubuntu_file
 
     elif [[ $system_Type -eq 5 && $release_2 -eq 9 ]]; then
-        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/rocky-9/"
-        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/rocky-9/"
-        rpm --import https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-9
+        yum_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/rocky-9/"
+        epel_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/rocky-9/"
+        rpm --import http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/RPM-GPG-KEY-EPEL-9
         pull_Rhel_file
 
     elif [[ $system_Type -eq 6 && $release_2 -eq 8 ]]; then
-        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/almalinux-8/"
-        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/alimalinux-8/"
-        rpm --import https://mirror-sv.raksmart.com/almalinux/RPM-GPG-KEY-AlmaLinux-8
+        yum_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/almalinux-8/"
+        epel_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/alimalinux-8/"
+        rpm --import http://mirror-sv.raksmart.com/almalinux/RPM-GPG-KEY-AlmaLinux-8
         pull_Rhel_file
 
     elif [[ $system_Type -eq 6 && $release_2 -eq 9 ]]; then
-        yum_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/almalinux-9/"
-        epel_URL="https://mirror-sv.raksmart.com/mirror-sv_source_file/epel/alimalinux-9/"
+        yum_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/almalinux-9/"
+        epel_URL="http://mirror-sv.raksmart.com/mirror-sv_source_file/epel/alimalinux-9/"
         pull_Rhel_file
     fi
 
