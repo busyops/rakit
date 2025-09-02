@@ -1,5 +1,5 @@
 #!/bin/bash
-# date: 2025-8-3  version: v1.5.5
+# date: 2025-9-2  version: v1.5.5
 # Author: Hope
 # Mail: busyops@outlook.com
 # Github: git@github.com:busyops/rakit.git
